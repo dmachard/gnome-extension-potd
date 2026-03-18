@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.potd" path="/org/gnome/shell/extensions/potd/">
+    <key name="provider" type="s">
+      <default>'auto'</default>
+      <summary>Image provider source</summary>
+      <description>Select the source for the daily background image.</description>
+      <choices>
+        <choice value="bing"/>
+        <choice value="wikimedia"/>
+        <choice value="auto"/>
+      </choices>
+    </key>
+    <key name="language" type="s">
+      <default>'auto'</default>
+      <summary>Language for metadata</summary>
+      <description>Select the language for image descriptions (if supported).</description>
+    </key>
+    <key name="auto-translate" type="b">
+      <default>false</default>
+      <summary>Enable automatic translation</summary>
+      <description>Enable automatic translation using MyMemory API if the description is not available in the target language.</description>
+    </key>
+    <key name="enable-bing" type="b">
+      <default>true</default>
+      <summary>Enable Bing in Auto mode</summary>
+      <description>Whether Bing should be included in the auto rotation.</description>
+    </key>
+    <key name="enable-wikimedia" type="b">
+      <default>true</default>
+      <summary>Enable Wikimedia in Auto mode</summary>
+      <description>Whether Wikimedia should be included in the auto rotation.</description>
+    </key>
+  </schema>
+</schemalist>
