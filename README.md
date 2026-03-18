@@ -2,16 +2,13 @@
 
 A GNOME Shell extension that automatically updates your wallpaper with daily images from Bing and Wikimedia Commons, featuring a minimalist credits overlay and automatic translation. 
 
-<img src="potd-overview.png" alt="Live-RADIO" width="200"/>
+<img src="potd-overview.png" alt="Picture of the day"/>
 
 ## Features
 
 - **Automatic Rotation**: Switches between enabled image sources throughout the day.
   - Images provided by [Bing](https://www.bing.com) and [Wikimedia Commons](https://commons.wikimedia.org/)
 - **Description Overlay**: Displays a minimalist info box on desktop with the image title, author, and copyright credits.
-- **Localization & Translation**:
-  - Supports multiple languages for the UI.
-  - Features **Automatic Translation** of image descriptions into your local language (using the MyMemory API).
 
 ## Compatibility
 
