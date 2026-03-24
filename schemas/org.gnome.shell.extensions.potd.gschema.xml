@@ -31,5 +31,19 @@
       <summary>Enable Wikimedia in Auto mode</summary>
       <description>Whether Wikimedia should be included in the auto rotation.</description>
     </key>
+    <key name="picture-options" type="s">
+      <choices>
+        <choice value="none"/>
+        <choice value="wallpaper"/>
+        <choice value="centered"/>
+        <choice value="scaled"/>
+        <choice value="stretched"/>
+        <choice value="zoom"/>
+        <choice value="spanned"/>
+      </choices>
+      <default>'zoom'</default>
+      <summary>Background placement</summary>
+      <description>Select how the image should be placed on the desktop.</description>
+    </key>
   </schema>
 </schemalist>

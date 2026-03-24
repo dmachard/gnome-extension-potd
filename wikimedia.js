@@ -10,8 +10,8 @@ export class WikimediaProvider extends ImageProvider {
         this._settings = settings;
     }
 
-    async fetchMetadata() {
-        console.log('[POTD] Wikimedia fetching started');
+    async fetchMetadata(width = 3840) {
+        console.log(`[POTD] Wikimedia fetching started (target width: ${width}px)`);
         const date = new GLib.DateTime().format('%Y-%m-%d');
         const targetLang = this.getSystemLanguage();
         console.log(`[POTD] Targeted language: ${targetLang}`);
@@ -43,7 +43,7 @@ export class WikimediaProvider extends ImageProvider {
             }
         }
 
-        const details = await this._getImageDetails(filename, targetLang);
+        const details = await this._getImageDetails(filename, targetLang, width);
 
         // Localized generic title for Wikimedia POTD
         const genericTitles = {
@@ -151,7 +151,7 @@ export class WikimediaProvider extends ImageProvider {
 
     async _getFilename(date) {
         const session = new Soup.Session();
-        session.user_agent = 'PotdExtension/1.0';
+        session.user_agent = 'DailyPhotoExtension/1.0 (https://github.com/dmachard/dailyphoto)';
 
         const params = [
             'action=expandtemplates',
@@ -187,7 +187,7 @@ export class WikimediaProvider extends ImageProvider {
         });
     }
 
-    async _getImageDetails(filename, lang) {
+    async _getImageDetails(filename, lang, width) {
         if (!filename) {
             throw new Error('Filename is empty');
         }
@@ -197,13 +197,14 @@ export class WikimediaProvider extends ImageProvider {
         console.log(`[POTD] Fetching details for clean filename: ${cleanFilename}`);
 
         const session = new Soup.Session();
-        session.user_agent = 'PotdExtension/1.0';
+        session.user_agent = 'DailyPhotoExtension/1.0 (https://github.com/dmachard/dailyphoto)';
 
         const params = [
             'action=query',
             `titles=File:${encodeURIComponent(cleanFilename)}`,
             'prop=imageinfo',
-            'iiprop=url|extmetadata',
+            `iiprop=url|extmetadata|size${width ? '|thumburl' : ''}`,
+            width ? `iiurlwidth=${width}` : '',
             'format=json',
             'origin=*',
             `uselang=${lang}`
@@ -245,7 +246,7 @@ export class WikimediaProvider extends ImageProvider {
                         author: meta.Artist ? meta.Artist.value.replace(/<[^>]*>/g, '') : 'Wikimedia Commons',
                         copyright: meta.LicenseShortName ? meta.LicenseShortName.value : '',
                         description: description,
-                        imageUrl: info.url,
+                        imageUrl: (width && info.thumburl) ? info.thumburl : info.url,
                         infoUrl: `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(cleanFilename)}`,
                     });
                 } catch (e) {

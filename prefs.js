@@ -63,5 +63,39 @@ export default class DailyPhotoPreferences extends ExtensionPreferences {
         });
         settings.bind('enable-wikimedia', wikimediaRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         autoGroup.add(wikimediaRow);
+
+        // Display Group
+        const displayGroup = new Adw.PreferencesGroup({
+            title: 'Display',
+            description: 'Configure how the image is displayed on your desktop',
+        });
+        page.add(displayGroup);
+
+        const optionsModel = Gtk.StringList.new([
+            'Zoom (Remplir)',
+            'Centered (Centrer)',
+            'Scaled (Ajuster)',
+            'Stretched (Étirer)',
+            'Spanned (Étendre)',
+            'None (Aucun)'
+        ]);
+
+        const optionsRow = new Adw.ComboRow({
+            title: 'Image placement',
+            model: optionsModel,
+        });
+
+        const currentOption = settings.get_string('picture-options');
+        const optionsValues = ['zoom', 'centered', 'scaled', 'stretched', 'spanned', 'none'];
+        const optionIndex = optionsValues.indexOf(currentOption);
+        if (optionIndex !== -1) {
+            optionsRow.selected = optionIndex;
+        }
+
+        optionsRow.connect('notify::selected', () => {
+            settings.set_string('picture-options', optionsValues[optionsRow.selected]);
+        });
+
+        displayGroup.add(optionsRow);
     }
 }

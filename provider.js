@@ -5,9 +5,10 @@ import GLib from 'gi://GLib';
  */
 export class ImageProvider {
     /**
+     * @param {number} width - Desired image width for thumbnails
      * @returns {Promise<{title: string, author: string, copyright: string, imageUrl: string, description: string, infoUrl: string}>}
      */
-    async fetchMetadata() {
+    async fetchMetadata(width) {
         throw new Error('Not implemented');
     }
 

@@ -11,7 +11,7 @@ export class BingProvider extends ImageProvider {
         this._settings = settings;
     }
 
-    async fetchMetadata() {
+    async fetchMetadata(width) {
         // Detect system language
         const lang = this.getSystemLanguage();
 

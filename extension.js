@@ -2,6 +2,7 @@ import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Soup from 'gi://Soup?version=3.0';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { BingProvider } from './bing.js';
 import { WikimediaProvider } from './wikimedia.js';
@@ -22,7 +23,7 @@ export default class DailySceneryExtension extends Extension {
 
         const refreshKeys = [
             'provider', 'language', 'auto-translate',
-            'enable-bing', 'enable-wikimedia'
+            'enable-bing', 'enable-wikimedia', 'picture-options'
         ];
 
         this._signalIds = [];
@@ -97,7 +98,11 @@ export default class DailySceneryExtension extends Extension {
                         providerObj = new BingProvider(this._settings);
                     }
 
-                    metadata = await providerObj.fetchMetadata();
+                    // Get primary monitor width for thumbnail fetching
+                    const monitor = Main.layoutManager.primaryMonitor;
+                    const width = monitor ? monitor.width : 3840;
+
+                    metadata = await providerObj.fetchMetadata(width);
                     console.log(`[POTD] Metadata fetched via ${pName}: ${metadata.title}`);
                     break; // Success, exit fallback loop
                 } catch (e) {
@@ -170,6 +175,11 @@ export default class DailySceneryExtension extends Extension {
 
     _setWallpaper(path) {
         const uri = Gio.File.new_for_path(path).get_uri();
+        
+        // Apply placement options
+        const placement = this._settings.get_string('picture-options') || 'zoom';
+        this._bgSettings.set_string('picture-options', placement);
+
         this._bgSettings.set_string('picture-uri', uri);
         this._bgSettings.set_string('picture-uri-dark', uri);
     }

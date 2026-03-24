@@ -16,6 +16,7 @@ A GNOME Shell extension that automatically updates your wallpaper with daily ima
 |---------------------|-----------|
 | 48                  | ✅        |
 | 49                  | ✅        |
+| 50                  | ✅        |
 
 
 ## Installation

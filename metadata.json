@@ -4,8 +4,9 @@
   "description": "Automatically set daily wallpapers and display credits overlay from Bing and Wikimedia",
   "shell-version": [
     "48",
-    "49"
+    "49",
+    "50"
   ],
   "settings-schema": "org.gnome.shell.extensions.potd",
-  "version": 3
+  "version": 4
 }
