@@ -37,3 +37,33 @@ A GNOME Shell extension that automatically updates your wallpaper with daily ima
   ```bash
   dbus-run-session gnome-shell --nested --wayland
   ```
+
+## Build for website
+
+Developers Guide: https://gjs.guide/extensions/
+
+Update the version in `metadata.json`
+Zip and upload at  https://extensions.gnome.org/upload/
+
+```bash
+cd ~/.local/share/gnome-shell/extensions/potd@dmachard.dev
+
+zip -r ~/potd@dmachard.dev.shell-extension.zip \
+    extension.js \
+    prefs.js \
+    bing.js \
+    wikimedia.js \
+    overlay.js \
+    provider.js \
+    metadata.json \
+    schemas/org.gnome.shell.extensions.potd.gschema.xml
+```
+
+Before uploading, you can run the Shexli static analyzer locally to catch common packaging and review issues early.
+
+```bash
+virtualenv venv
+. venv/bin/activate
+pip install -U shexli
+shexli path_to_zip_or_folder
+```
