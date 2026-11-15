@@ -12,7 +12,8 @@ echo "[+] Setting up isolated test environment in $TMP_DIR ..."
 mkdir -p "$EXT_DIR/schemas"
 
 # Copy extension files
-cp extension.js prefs.js bing.js wikimedia.js backdrop.js overlay.js provider.js metadata.json "$EXT_DIR/"
+cp extension.js prefs.js bing.js wikimedia.js overlay.js provider.js metadata.json "$EXT_DIR/"
+cp -r icons "$EXT_DIR/"
 cp schemas/*.gschema.xml "$EXT_DIR/schemas/"
 
 # Compile GSettings schemas in test directory

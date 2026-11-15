@@ -2,7 +2,10 @@ import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Soup from 'gi://Soup?version=3.0';
+import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import { BingProvider } from './bing.js';
 import { WikimediaProvider } from './wikimedia.js';
@@ -16,6 +19,24 @@ export default class DailySceneryExtension extends Extension {
         this._overlay = new Overlay();
         this._settings = this.getSettings();
         this._bgSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.background' });
+
+        this._indicator = new PanelMenu.Button(0.5, this.metadata.name, false);
+        this._icon = new St.Icon({
+            gicon: Gio.icon_new_for_string(`${this.path}/icons/daily-symbolic.svg`),
+            style_class: 'system-status-icon',
+        });
+        this._indicator.add_child(this._icon);
+        const titleItem = new PopupMenu.PopupMenuItem(this.metadata.name, { reactive: false });
+        titleItem.label.style = 'font-weight: bold;';
+        this._indicator.menu.addMenuItem(titleItem);
+        this._statusItem = new PopupMenu.PopupMenuItem('Loading...', { reactive: false });
+        this._statusItem.label.style = 'font-size: 0.9em; opacity: 0.75;';
+        this._indicator.menu.addMenuItem(this._statusItem);
+        this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        this._indicator.menu.addAction('Settings', () => {
+            this.openPreferences();
+        });
+        Main.panel.addToStatusArea(this.uuid, this._indicator);
 
         this._refresh().catch(e => {
             console.log(`[POTD] Initial refresh error: ${e.message}`);
@@ -58,6 +79,11 @@ export default class DailySceneryExtension extends Extension {
             this._signalIds = [];
         }
 
+        this._indicator?.destroy();
+        this._indicator = null;
+        this._icon = null;
+        this._statusItem = null;
+
         this._overlay?.hide();
         this._overlay = null;
         this._settings = null;
@@ -70,7 +96,7 @@ export default class DailySceneryExtension extends Extension {
             const enabledProviders = ['bing', 'wikimedia'].filter(
                 p => this._settings.get_boolean(`enable-${p}`)
             );
-            
+
             if (enabledProviders.length === 0) {
                 // If all disabled, force at least one (Bing) to avoid crash
                 enabledProviders.push('bing');
@@ -79,7 +105,7 @@ export default class DailySceneryExtension extends Extension {
             const hour = new Date().getHours();
             const sliceLength = 24 / enabledProviders.length;
             const index = Math.floor(hour / sliceLength) % enabledProviders.length;
-            
+
             // Place calculated provider first, then others as fallback
             const sequence = [
                 enabledProviders[index],
@@ -89,6 +115,7 @@ export default class DailySceneryExtension extends Extension {
             console.log(`[POTD] Provider sequence (hour ${hour}): try ${sequence.join(' -> ')}`);
 
             let metadata = null;
+            let usedProvider = '';
             for (const pName of sequence) {
                 try {
                     let providerObj;
@@ -103,6 +130,7 @@ export default class DailySceneryExtension extends Extension {
                     const width = monitor ? monitor.width : 3840;
 
                     metadata = await providerObj.fetchMetadata(width);
+                    usedProvider = pName;
                     console.log(`[POTD] Metadata fetched via ${pName}: ${metadata.title}`);
                     break; // Success, exit fallback loop
                 } catch (e) {
@@ -121,8 +149,21 @@ export default class DailySceneryExtension extends Extension {
             if (metadata.imageUrl) {
                 await this._updateWallpaper(metadata.imageUrl);
             }
+
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            this._setStatus(`Updated: ${time} (${usedProvider})`, false);
         } catch (e) {
             console.error(`[POTD] Global refresh error: ${e.message}`);
+            this._setStatus(`Error: ${e.message}`, true);
+        }
+    }
+
+    _setStatus(text, isError) {
+        if (this._statusItem) {
+            this._statusItem.label.text = text;
+        }
+        if (this._icon) {
+            this._icon.opacity = isError ? 140 : 255;
         }
     }
 
@@ -153,7 +194,7 @@ export default class DailySceneryExtension extends Extension {
         session.user_agent = 'DailyPhotoExtension/1.0 (https://github.com/dmachard/dailyphoto)';
         const message = Soup.Message.new('GET', url);
 
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
                 try {
                     const bytes = session.send_and_read_finish(result);
@@ -165,17 +206,18 @@ export default class DailySceneryExtension extends Extension {
 
                     destFile.replace_contents(bytes.get_data(), null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
                     this._setWallpaper(destPath);
+                    resolve();
                 } catch (e) {
                     console.error(`[POTD] Download error: ${e.message}`);
+                    reject(e);
                 }
-                resolve();
             });
         });
     }
 
     _setWallpaper(path) {
         const uri = Gio.File.new_for_path(path).get_uri();
-        
+
         // Apply placement options
         const placement = this._settings.get_string('picture-options') || 'zoom';
         this._bgSettings.set_string('picture-options', placement);

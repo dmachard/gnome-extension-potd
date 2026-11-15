@@ -27,7 +27,7 @@
       <description>Whether Bing should be included in the auto rotation.</description>
     </key>
     <key name="enable-wikimedia" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Enable Wikimedia in Auto mode</summary>
       <description>Whether Wikimedia should be included in the auto rotation.</description>
     </key>

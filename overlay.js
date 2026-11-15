@@ -75,7 +75,7 @@ export class Overlay {
 
         if (descParts.length > 0) {
             const descLabel = new St.Label({
-                text: descParts.join(' — '),
+                text: descParts.join('\n'),
                 style: STYLE_SUBTITLE,
             });
             descLabel.set_width(LABEL_WIDTH);
