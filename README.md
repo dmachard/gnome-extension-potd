@@ -18,7 +18,7 @@ A GNOME Shell extension that automatically updates your wallpaper with daily ima
 | 48                  | ✅        |
 | 49                  | ✅        |
 | 50                  | ✅        |
-
+| 51                  | ✅        |
 
 ## Installation
 
@@ -67,5 +67,5 @@ Before uploading, you can run the Shexli static analyzer locally to catch common
 virtualenv venv
 . venv/bin/activate
 pip install -U shexli
-shexli path_to_zip_or_folder
+shexli ~/potd@dmachard.dev.shell-extension.zip
 ```

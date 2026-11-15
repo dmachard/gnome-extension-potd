@@ -90,14 +90,15 @@ export class Overlay {
         bgGroup.add_child(this._container);
 
         // Position just below the top bar (more robust via Main.panel)
-        const monitor = Main.layoutManager.primaryIndex;
-        const monitorGeom = Main.layoutManager.monitors[monitor];
+        const monitorGeom = Main.layoutManager.primaryMonitor
+            ?? Main.layoutManager.monitors?.[0];
+        const monitorX = monitorGeom ? monitorGeom.x : 0;
         const panel = Main.panel;
         const panelHeight = panel ? panel.height : 0;
         const panelY = panel ? panel.y : 0;
 
         this._container.set_position(
-            monitorGeom.x + BOX_MARGIN,
+            monitorX + BOX_MARGIN,
             panelY + panelHeight + BOX_MARGIN,
         );
 

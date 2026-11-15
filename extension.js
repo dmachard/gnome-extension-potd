@@ -15,7 +15,6 @@ const REFRESH_INTERVAL = 3600;
 
 export default class DailySceneryExtension extends Extension {
     enable() {
-        console.log('[POTD] Extension enabling');
         this._overlay = new Overlay();
         this._settings = this.getSettings();
         this._bgSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.background' });
@@ -38,9 +37,7 @@ export default class DailySceneryExtension extends Extension {
         });
         Main.panel.addToStatusArea(this.uuid, this._indicator);
 
-        this._refresh().catch(e => {
-            console.log(`[POTD] Initial refresh error: ${e.message}`);
-        });
+        this._refresh().catch(() => {});
 
         const refreshKeys = [
             'provider', 'language', 'auto-translate',
@@ -50,8 +47,7 @@ export default class DailySceneryExtension extends Extension {
         this._signalIds = [];
         for (const key of refreshKeys) {
             const id = this._settings.connect(`changed::${key}`, () => {
-                console.log(`[POTD] Setting changed: ${key}, refreshing...`);
-                this._refresh().catch(e => console.log(`[POTD] Settings change refresh error: ${e.message}`));
+                this._refresh().catch(() => {});
             });
             this._signalIds.push(id);
         }
@@ -60,7 +56,7 @@ export default class DailySceneryExtension extends Extension {
             GLib.PRIORITY_DEFAULT,
             REFRESH_INTERVAL,
             () => {
-                this._refresh().catch(e => console.log(`[POTD] Timer refresh error: ${e.message}`));
+                this._refresh().catch(() => {});
                 return GLib.SOURCE_CONTINUE;
             }
         );
@@ -79,10 +75,12 @@ export default class DailySceneryExtension extends Extension {
             this._signalIds = [];
         }
 
+        this._statusItem?.destroy();
+        this._statusItem = null;
+        this._icon?.destroy();
+        this._icon = null;
         this._indicator?.destroy();
         this._indicator = null;
-        this._icon = null;
-        this._statusItem = null;
 
         this._overlay?.hide();
         this._overlay = null;
@@ -91,7 +89,6 @@ export default class DailySceneryExtension extends Extension {
     }
 
     async _refresh() {
-        console.log('[POTD] Refresh starting...');
         try {
             const enabledProviders = ['bing', 'wikimedia'].filter(
                 p => this._settings.get_boolean(`enable-${p}`)
@@ -112,7 +109,6 @@ export default class DailySceneryExtension extends Extension {
                 ...enabledProviders.slice(index + 1),
                 ...enabledProviders.slice(0, index)
             ];
-            console.log(`[POTD] Provider sequence (hour ${hour}): try ${sequence.join(' -> ')}`);
 
             let metadata = null;
             let usedProvider = '';
@@ -131,10 +127,9 @@ export default class DailySceneryExtension extends Extension {
 
                     metadata = await providerObj.fetchMetadata(width);
                     usedProvider = pName;
-                    console.log(`[POTD] Metadata fetched via ${pName}: ${metadata.title}`);
                     break; // Success, exit fallback loop
                 } catch (e) {
-                    console.log(`[POTD] Provider ${pName} failed: ${e.message}. Trying next...`);
+                    // Try next provider
                 }
             }
 
@@ -168,7 +163,6 @@ export default class DailySceneryExtension extends Extension {
     }
 
     async _updateWallpaper(url) {
-        console.log(`[POTD] Downloading wallpaper from: ${url}`);
         const cacheDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'daily-scenery']);
         GLib.mkdir_with_parents(cacheDir, 0o755);
 
@@ -181,7 +175,6 @@ export default class DailySceneryExtension extends Extension {
             try {
                 const info = destFile.query_info('standard::size', Gio.FileQueryInfoFlags.NONE, null);
                 if (info.get_size() < 1000) { // Wallpaper is rarely less than 1KB
-                    console.log('[POTD] Removing potentially corrupted small file');
                     destFile.delete(null);
                 } else {
                     this._setWallpaper(destPath);

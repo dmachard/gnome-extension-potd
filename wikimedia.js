@@ -11,10 +11,8 @@ export class WikimediaProvider extends ImageProvider {
     }
 
     async fetchMetadata(width = 3840) {
-        console.log(`[POTD] Wikimedia fetching started (target width: ${width}px)`);
         const date = new GLib.DateTime().format('%Y-%m-%d');
         const targetLang = this.getSystemLanguage();
-        console.log(`[POTD] Targeted language: ${targetLang}`);
 
         const filename = await this._getFilename(date);
 
@@ -23,20 +21,17 @@ export class WikimediaProvider extends ImageProvider {
 
         // 2. If fails and target wasn't English, try explicit English
         if (!description && targetLang !== 'en') {
-            console.log('[POTD] Localized description not found, trying explicit English');
             description = await this._getDescription(date, 'en');
         }
 
         // 3. If still nothing, try main template (sometimes contains default description)
         if (!description) {
-            console.log('[POTD] Explicit language templates failed, trying main template');
             description = await this._getRawDescription(date);
         }
 
         // 4. If we have English and user wants French with auto-translation
         const autoTranslate = this._settings?.get_boolean('auto-translate') || false;
         if (description && targetLang === 'fr' && autoTranslate) {
-            console.log('[POTD] Attempting auto-translation to French');
             const translated = await this._translate(description, 'en', 'fr');
             if (translated) {
                 description = translated;
@@ -97,10 +92,8 @@ export class WikimediaProvider extends ImageProvider {
                         let translatedText = json.responseData.translatedText;
                         // Quick cleanup if MyMemory returns HTML entities
                         translatedText = translatedText.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
-                        console.log('[POTD] Translation successful');
                         resolve(translatedText);
                     } else {
-                        console.log(`[POTD] Translation API returned status ${json.responseStatus}`);
                         resolve('');
                     }
                 } catch (e) {
@@ -162,7 +155,6 @@ export class WikimediaProvider extends ImageProvider {
         ].join('&');
 
         const url = `${COMMONS_API}?${params}`;
-        console.log(`[POTD] Wikimedia _getFilename URL: ${url}`);
         const message = Soup.Message.new('GET', url);
 
         return new Promise((resolve, reject) => {
@@ -177,7 +169,6 @@ export class WikimediaProvider extends ImageProvider {
 
                     const json = JSON.parse(new TextDecoder().decode(bytes.get_data()));
                     const resultFilename = json.expandtemplates.wikitext?.trim();
-                    console.log(`[POTD] expandtemplates result: ${resultFilename}`);
                     resolve(resultFilename);
                 } catch (e) {
                     console.error(`[POTD] Wikimedia _getFilename error: ${e.message}`);
@@ -194,7 +185,6 @@ export class WikimediaProvider extends ImageProvider {
 
         // Clean filename (remove "File:" or "Fichier:" prefix if present)
         const cleanFilename = filename.replace(/^(File|Fichier):/i, '').trim();
-        console.log(`[POTD] Fetching details for clean filename: ${cleanFilename}`);
 
         const session = new Soup.Session();
         session.user_agent = 'DailyPhotoExtension/1.0 (https://github.com/dmachard/dailyphoto)';
@@ -211,7 +201,6 @@ export class WikimediaProvider extends ImageProvider {
         ].join('&');
 
         const url = `${COMMONS_API}?${params}`;
-        console.log(`[POTD] Wikimedia _getImageDetails URL: ${url}`);
         const message = Soup.Message.new('GET', url);
 
         return new Promise((resolve, reject) => {
@@ -225,7 +214,6 @@ export class WikimediaProvider extends ImageProvider {
                     }
 
                     const json = JSON.parse(new TextDecoder().decode(bytes.get_data()));
-                    console.log(`[POTD] Wikimedia query result: ${JSON.stringify(json).substring(0, 200)}...`);
 
                     const pages = json.query.pages;
                     const pageId = Object.keys(pages)[0];
