@@ -24,20 +24,28 @@ A GNOME Shell extension that automatically updates your wallpaper with daily ima
 
 ### From Source
 
-1. Clone this repository into your local extensions directory:
+1. Clone this repository:
    ```bash
-   git clone https://github.com/dmachard/gnome-shell-extension-potd.git ~/.local/share/gnome-shell/extensions/potd@dmachard.dev
+   git clone https://github.com/dmachard/gnome-shell-extension-potd.git
+   cd gnome-shell-extension-potd
    ```
 
-2. Compile the settings schema:
+2. Install the extension:
    ```bash
-   glib-compile-schemas ~/.local/share/gnome-shell/extensions/potd@dmachard.dev/schemas/
+   ./install.sh
    ```
 
-3. Restart GNOME Shell (or logout/login on Wayland) or run the following command
-  ```bash
-  dbus-run-session gnome-shell --nested --wayland
-  ```
+3. Restart GNOME Shell (or logout/login on Wayland), then enable the extension:
+   ```bash
+   gnome-extensions enable potd@dmachard.dev
+   ```
+
+### Local Testing
+
+Run an isolated nested GNOME Shell session without touching your host configuration:
+```bash
+./test-local.sh
+```
 
 ## Build for website
 
