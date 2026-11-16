@@ -11,14 +11,9 @@ A GNOME Shell extension that automatically updates your wallpaper with daily ima
 - **Description Overlay**: Displays a minimalist info box on desktop with the image title, author, and copyright credits.
 - **Top Bar Menu**: Panel indicator for quick access to extension settings.
 
-## Compatibility
+## Requirements
 
-| GNOME Shell Version | Supported |
-|---------------------|-----------|
-| 48                  | ✅        |
-| 49                  | ✅        |
-| 50                  | ✅        |
-| 51                  | ✅        |
+- GNOME Shell `48`, `49`, `50`, or `51`
 
 ## Installation
 
