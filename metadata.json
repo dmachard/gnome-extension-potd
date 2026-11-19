@@ -10,5 +10,5 @@
   ],
   "settings-schema": "org.gnome.shell.extensions.potd",
   "url": "https://github.com/dmachard/gnome-shell-extension-potd",
-  "version": 2
+  "version": 3
 }

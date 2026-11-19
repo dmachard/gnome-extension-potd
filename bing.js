@@ -1,4 +1,4 @@
-import Soup from 'gi://Soup?version=3.0';
+import Soup from 'gi://Soup';
 import GLib from 'gi://GLib';
 import { ImageProvider } from './provider.js';
 
@@ -6,9 +6,10 @@ const BING_BASE = 'https://www.bing.com';
 const BING_URL_BASE = `${BING_BASE}/HPImageArchive.aspx?format=js&idx=0&n=1`;
 
 export class BingProvider extends ImageProvider {
-    constructor(settings) {
+    constructor(settings, session) {
         super();
         this._settings = settings;
+        this._session = session;
     }
 
     async fetchMetadata(width) {
@@ -25,15 +26,14 @@ export class BingProvider extends ImageProvider {
         const mkt = markets[lang] || 'en-US';
         const url = `${BING_URL_BASE}&mkt=${mkt}&setlang=${lang}`;
 
-        const session = new Soup.Session();
         const message = Soup.Message.new('GET', url);
 
         return new Promise((resolve, reject) => {
-            session.send_and_read_async(
+            this._session.send_and_read_async(
                 message,
                 GLib.PRIORITY_DEFAULT,
                 null,
-                async (session, result) => {
+                (session, result) => {
                     try {
                         const bytes = session.send_and_read_finish(result);
                         const text = new TextDecoder().decode(bytes.get_data());
@@ -72,16 +72,6 @@ export class BingProvider extends ImageProvider {
                             description = description ? `${description}. ${copyright}` : copyright;
                         }
 
-                        // Automatic translation if necessary
-                        const autoTranslate = this._settings?.get_boolean('auto-translate') || false;
-                        if (description && lang === 'fr' && autoTranslate) {
-                            console.log('[POTD] Bing: Attempting auto-translation to French');
-                            const translated = await this._translate(description, 'en', 'fr');
-                            if (translated) {
-                                description = translated;
-                            }
-                        }
-
                         resolve({
                             title: title,
                             author: author,
@@ -95,44 +85,6 @@ export class BingProvider extends ImageProvider {
                     }
                 }
             );
-        });
-    }
-
-    async _translate(text, from, to) {
-        if (!text) return '';
-
-        const session = new Soup.Session();
-        session.user_agent = 'DailyPhotoExtension/1.0 (https://github.com/dmachard/dailyphoto)';
-
-        const params = [
-            `q=${encodeURIComponent(text)}`,
-            `langpair=${from}|${to}`,
-            'de=dmachard@gmail.com'
-        ].join('&');
-
-        const url = `https://api.mymemory.translated.net/get?${params}`;
-        const message = Soup.Message.new('GET', url);
-
-        return new Promise((resolve) => {
-            session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
-                try {
-                    const bytes = session.send_and_read_finish(result);
-                    const json = JSON.parse(new TextDecoder().decode(bytes.get_data()));
-
-                    if (json.responseStatus === 200) {
-                        let translatedText = json.responseData.translatedText;
-                        translatedText = translatedText.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
-                        console.log('[POTD] Bing: Translation successful');
-                        resolve(translatedText);
-                    } else {
-                        console.log(`[POTD] Bing: Translation API returned status ${json.responseStatus}`);
-                        resolve('');
-                    }
-                } catch (e) {
-                    console.error(`[POTD] Bing: Translation error: ${e.message}`);
-                    resolve('');
-                }
-            });
         });
     }
 }

@@ -1,13 +1,14 @@
-import Soup from 'gi://Soup?version=3.0';
+import Soup from 'gi://Soup';
 import GLib from 'gi://GLib';
 import { ImageProvider } from './provider.js';
 
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
 
 export class WikimediaProvider extends ImageProvider {
-    constructor(settings) {
+    constructor(settings, session) {
         super();
         this._settings = settings;
+        this._session = session;
     }
 
     async fetchMetadata(width = 3840) {
@@ -27,15 +28,6 @@ export class WikimediaProvider extends ImageProvider {
         // 3. If still nothing, try main template (sometimes contains default description)
         if (!description) {
             description = await this._getRawDescription(date);
-        }
-
-        // 4. If we have English and user wants French with auto-translation
-        const autoTranslate = this._settings?.get_boolean('auto-translate') || false;
-        if (description && targetLang === 'fr' && autoTranslate) {
-            const translated = await this._translate(description, 'en', 'fr');
-            if (translated) {
-                description = translated;
-            }
         }
 
         const details = await this._getImageDetails(filename, targetLang, width);
@@ -67,47 +59,7 @@ export class WikimediaProvider extends ImageProvider {
         return this._expandTemplate(text);
     }
 
-    async _translate(text, from, to) {
-        if (!text) return '';
-
-        const session = new Soup.Session();
-        session.user_agent = 'DailyPhotoExtension/1.0 (https://github.com/dmachard/dailyphoto)';
-
-        const params = [
-            `q=${encodeURIComponent(text)}`,
-            `langpair=${from}|${to}`,
-            'de=dmachard@gmail.com' // Email allows for higher quota (50k chars/day)
-        ].join('&');
-
-        const url = `https://api.mymemory.translated.net/get?${params}`;
-        const message = Soup.Message.new('GET', url);
-
-        return new Promise((resolve) => {
-            session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
-                try {
-                    const bytes = session.send_and_read_finish(result);
-                    const json = JSON.parse(new TextDecoder().decode(bytes.get_data()));
-
-                    if (json.responseStatus === 200) {
-                        let translatedText = json.responseData.translatedText;
-                        // Quick cleanup if MyMemory returns HTML entities
-                        translatedText = translatedText.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
-                        resolve(translatedText);
-                    } else {
-                        resolve('');
-                    }
-                } catch (e) {
-                    console.error(`[POTD] Translation error: ${e.message}`);
-                    resolve('');
-                }
-            });
-        });
-    }
-
     async _expandTemplate(text) {
-        const session = new Soup.Session();
-        session.user_agent = 'DailyPhotoExtension/1.0 (https://github.com/dmachard/dailyphoto)';
-
         const params = [
             'action=expandtemplates',
             'format=json',
@@ -120,7 +72,7 @@ export class WikimediaProvider extends ImageProvider {
         const message = Soup.Message.new('GET', url);
 
         return new Promise((resolve) => {
-            session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
+            this._session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
                 try {
                     const bytes = session.send_and_read_finish(result);
                     const json = JSON.parse(new TextDecoder().decode(bytes.get_data()));
@@ -143,9 +95,6 @@ export class WikimediaProvider extends ImageProvider {
     }
 
     async _getFilename(date) {
-        const session = new Soup.Session();
-        session.user_agent = 'DailyPhotoExtension/1.0 (https://github.com/dmachard/dailyphoto)';
-
         const params = [
             'action=expandtemplates',
             'format=json',
@@ -158,7 +107,7 @@ export class WikimediaProvider extends ImageProvider {
         const message = Soup.Message.new('GET', url);
 
         return new Promise((resolve, reject) => {
-            session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
+            this._session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
                 try {
                     const bytes = session.send_and_read_finish(result);
                     const status = message.status_code;
@@ -186,9 +135,6 @@ export class WikimediaProvider extends ImageProvider {
         // Clean filename (remove "File:" or "Fichier:" prefix if present)
         const cleanFilename = filename.replace(/^(File|Fichier):/i, '').trim();
 
-        const session = new Soup.Session();
-        session.user_agent = 'DailyPhotoExtension/1.0 (https://github.com/dmachard/dailyphoto)';
-
         const params = [
             'action=query',
             `titles=File:${encodeURIComponent(cleanFilename)}`,
@@ -204,7 +150,7 @@ export class WikimediaProvider extends ImageProvider {
         const message = Soup.Message.new('GET', url);
 
         return new Promise((resolve, reject) => {
-            session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
+            this._session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
                 try {
                     const bytes = session.send_and_read_finish(result);
                     const status = message.status_code;

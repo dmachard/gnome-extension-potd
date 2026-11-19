@@ -13,21 +13,16 @@ export class ImageProvider {
     }
 
     /**
-     * Utility to get the current language from settings or system.
+     * Utility to get the current system language.
      * @returns {string} ISO language code (e.g., 'en', 'fr')
      */
     getSystemLanguage() {
-        let lang = this._settings?.get_string('language') || 'auto';
-        if (lang === 'auto') {
-            const languages = GLib.get_language_names();
-            lang = 'en';
-            for (let l of languages) {
-                if (l !== 'C' && l !== 'POSIX') {
-                    lang = l.split('_')[0].split('.')[0];
-                    break;
-                }
+        const languages = GLib.get_language_names();
+        for (const l of languages) {
+            if (l !== 'C' && l !== 'POSIX') {
+                return l.split('_')[0].split('.')[0];
             }
         }
-        return lang;
+        return 'en';
     }
 }

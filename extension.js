@@ -1,7 +1,7 @@
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
-import Soup from 'gi://Soup?version=3.0';
+import Soup from 'gi://Soup';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
@@ -13,11 +13,15 @@ import { Overlay } from './overlay.js';
 
 const REFRESH_INTERVAL = 3600;
 
-export default class DailySceneryExtension extends Extension {
+// Picture of the Day (Potd) Extension
+export default class PotdExtension extends Extension {
     enable() {
         this._overlay = new Overlay();
         this._settings = this.getSettings();
         this._bgSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.background' });
+        this._session = new Soup.Session({
+            user_agent: 'PictureOfTheDay/1.0',
+        });
 
         this._indicator = new PanelMenu.Button(0.5, this.metadata.name, false);
         this._icon = new St.Icon({
@@ -37,17 +41,16 @@ export default class DailySceneryExtension extends Extension {
         });
         Main.panel.addToStatusArea(this.uuid, this._indicator);
 
-        this._refresh().catch(() => {});
+        this._refresh().catch(() => { });
 
         const refreshKeys = [
-            'provider', 'language', 'auto-translate',
             'enable-bing', 'enable-wikimedia', 'picture-options'
         ];
 
         this._signalIds = [];
         for (const key of refreshKeys) {
             const id = this._settings.connect(`changed::${key}`, () => {
-                this._refresh().catch(() => {});
+                this._refresh().catch(() => { });
             });
             this._signalIds.push(id);
         }
@@ -56,7 +59,7 @@ export default class DailySceneryExtension extends Extension {
             GLib.PRIORITY_DEFAULT,
             REFRESH_INTERVAL,
             () => {
-                this._refresh().catch(() => {});
+                this._refresh().catch(() => { });
                 return GLib.SOURCE_CONTINUE;
             }
         );
@@ -81,6 +84,9 @@ export default class DailySceneryExtension extends Extension {
         this._icon = null;
         this._indicator?.destroy();
         this._indicator = null;
+
+        this._session?.abort();
+        this._session = null;
 
         this._overlay?.hide();
         this._overlay = null;
@@ -116,9 +122,9 @@ export default class DailySceneryExtension extends Extension {
                 try {
                     let providerObj;
                     if (pName === 'wikimedia') {
-                        providerObj = new WikimediaProvider(this._settings);
+                        providerObj = new WikimediaProvider(this._settings, this._session);
                     } else {
-                        providerObj = new BingProvider(this._settings);
+                        providerObj = new BingProvider(this._settings, this._session);
                     }
 
                     // Get primary monitor width for thumbnail fetching
@@ -183,12 +189,10 @@ export default class DailySceneryExtension extends Extension {
             } catch (e) { }
         }
 
-        const session = new Soup.Session();
-        session.user_agent = 'DailyPhotoExtension/1.0 (https://github.com/dmachard/dailyphoto)';
         const message = Soup.Message.new('GET', url);
 
         return new Promise((resolve, reject) => {
-            session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
+            this._session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
                 try {
                     const bytes = session.send_and_read_finish(result);
                     const status = message.status_code;
