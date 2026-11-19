@@ -50,8 +50,6 @@ Update the version in `metadata.json`
 Zip and upload at  https://extensions.gnome.org/upload/
 
 ```bash
-cd ~/.local/share/gnome-shell/extensions/potd@dmachard.dev
-
 zip -r ~/potd@dmachard.dev.shell-extension.zip \
     extension.js \
     prefs.js \
