@@ -26,6 +26,15 @@ glib-compile-schemas "$EXT_DIR/schemas/"
 echo "[+] Launching isolated nested GNOME Shell..."
 echo "[i] Close the window to exit and clean up."
 
+# Strip snap overrides (e.g. when launched from a snap terminal like VS Code)
+unset GSETTINGS_SCHEMA_DIR GIO_MODULE_DIR
+if [[ -n "${XDG_DATA_DIRS_VSCODE_SNAP_ORIG:-}" ]]; then
+    export XDG_DATA_DIRS="$XDG_DATA_DIRS_VSCODE_SNAP_ORIG"
+elif [[ -n "${XDG_DATA_DIRS:-}" ]]; then
+    CLEAN_XDG_DATA_DIRS=$(printf '%s\n' "${XDG_DATA_DIRS//:/$'\n'}" | grep -v '/snap/' | paste -sd: - || true)
+    export XDG_DATA_DIRS="${CLEAN_XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+fi
+
 # Run nested GNOME Shell with isolated HOME/XDG and extension pre-enabled
 HOME="$TMP_DIR" \
 XDG_DATA_HOME="$TMP_DIR/.local/share" \

@@ -24,6 +24,7 @@ export default class PotdExtension extends Extension {
         });
 
         this._indicator = new PanelMenu.Button(0.5, this.metadata.name, false);
+        this._indicator.style = '-natural-hpadding: 4px; -minimum-hpadding: 2px;';
         this._icon = new St.Icon({
             gicon: Gio.icon_new_for_string(`${this.path}/icons/daily-symbolic.svg`),
             style_class: 'system-status-icon',
