@@ -79,7 +79,7 @@ export default class DailyPhotoPreferences extends ExtensionPreferences {
         });
         page.add(downloadsGroup);
 
-        const defaultDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'daily-scenery']);
+        const defaultDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'potd']);
         const getActiveDir = () => settings.get_string('download-folder') || defaultDir;
 
         const folderRow = new Adw.ActionRow({

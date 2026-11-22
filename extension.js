@@ -233,7 +233,7 @@ export default class PotdExtension extends Extension {
 
     _getDownloadDir() {
         const customDir = this._settings?.get_string('download-folder');
-        return customDir || GLib.build_filenamev([GLib.get_user_cache_dir(), 'daily-scenery']);
+        return customDir || GLib.build_filenamev([GLib.get_user_cache_dir(), 'potd']);
     }
 
     _saveMetadata(destDir, baseName, metadata, provider) {
