@@ -37,6 +37,9 @@ export default class PotdExtension extends Extension {
         this._statusItem = new PopupMenu.PopupMenuItem('Loading...', { reactive: false });
         this._statusItem.label.style = 'font-size: 0.9em; opacity: 0.75;';
         this._indicator.menu.addMenuItem(this._statusItem);
+        this._nextUpdateItem = new PopupMenu.PopupMenuItem('', { reactive: false });
+        this._nextUpdateItem.label.style = 'font-size: 0.9em; opacity: 0.75;';
+        this._indicator.menu.addMenuItem(this._nextUpdateItem);
         this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._indicator.menu.addAction('Settings', () => {
             this.openPreferences();
@@ -57,10 +60,41 @@ export default class PotdExtension extends Extension {
             this._signalIds.push(id);
         }
 
+        this._scheduleTimer();
+    }
+
+    _getEnabledProviders() {
+        const enabled = ['bing', 'wikimedia', 'spotlight'].filter(
+            p => this._settings.get_boolean(`enable-${p}`)
+        );
+        return enabled.length > 0 ? enabled : ['bing'];
+    }
+
+    _getProviderIndex(date, providers) {
+        const sliceLength = 24 / providers.length;
+        return Math.floor(date.getHours() / sliceLength) % providers.length;
+    }
+
+    _updateNextUpdateLabel() {
+        if (!this._nextUpdateItem || !this._settings) return;
+        const nextDate = new Date(Date.now() + REFRESH_INTERVAL * 1000);
+        const nextTime = nextDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const providers = this._getEnabledProviders();
+        const nextProvider = providers[this._getProviderIndex(nextDate, providers)];
+        this._nextUpdateItem.label.text = `Next update: ${nextTime} (${nextProvider})`;
+    }
+
+    _scheduleTimer() {
+        if (this._timer) {
+            GLib.source_remove(this._timer);
+            this._timer = null;
+        }
+        this._updateNextUpdateLabel();
         this._timer = GLib.timeout_add_seconds(
             GLib.PRIORITY_DEFAULT,
             REFRESH_INTERVAL,
             () => {
+                this._updateNextUpdateLabel();
                 this._refresh().catch(() => { });
                 return GLib.SOURCE_CONTINUE;
             }
@@ -80,6 +114,8 @@ export default class PotdExtension extends Extension {
             this._signalIds = [];
         }
 
+        this._nextUpdateItem?.destroy();
+        this._nextUpdateItem = null;
         this._statusItem?.destroy();
         this._statusItem = null;
         this._icon?.destroy();
@@ -98,18 +134,9 @@ export default class PotdExtension extends Extension {
 
     async _refresh() {
         try {
-            const enabledProviders = ['bing', 'wikimedia', 'spotlight'].filter(
-                p => this._settings.get_boolean(`enable-${p}`)
-            );
-
-            if (enabledProviders.length === 0) {
-                // If all disabled, force at least one (Bing) to avoid crash
-                enabledProviders.push('bing');
-            }
-
-            const hour = new Date().getHours();
-            const sliceLength = 24 / enabledProviders.length;
-            const index = Math.floor(hour / sliceLength) % enabledProviders.length;
+            this._updateNextUpdateLabel();
+            const enabledProviders = this._getEnabledProviders();
+            const index = this._getProviderIndex(new Date(), enabledProviders);
 
             // Place calculated provider first, then others as fallback
             const sequence = [
