@@ -7,7 +7,7 @@ A GNOME Shell extension that automatically updates your wallpaper with daily ima
 ## Features
 
 - **Automatic Rotation**: Switches between enabled image sources throughout the day.
-  - Images provided by [Bing](https://www.bing.com) or [Wikimedia Commons](https://commons.wikimedia.org/)
+  - Images provided by [Bing](https://www.bing.com), [Wikimedia Commons](https://commons.wikimedia.org/), or Windows Spotlight
 - **Description Overlay**: Displays a minimalist info box on desktop with the image title, author, and copyright credits.
 - **Top Bar Menu**: Panel indicator for quick access to extension settings.
 
@@ -55,6 +55,7 @@ zip -r ~/potd@dmachard.dev.shell-extension.zip \
     prefs.js \
     bing.js \
     wikimedia.js \
+    spotlight.js \
     overlay.js \
     provider.js \
     metadata.json \

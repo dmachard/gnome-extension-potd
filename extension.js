@@ -9,6 +9,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import { BingProvider } from './bing.js';
 import { WikimediaProvider } from './wikimedia.js';
+import { WindowsSpotlightProvider } from './spotlight.js';
 import { Overlay } from './overlay.js';
 
 const REFRESH_INTERVAL = 3600;
@@ -45,7 +46,7 @@ export default class PotdExtension extends Extension {
         this._refresh().catch(() => { });
 
         const refreshKeys = [
-            'enable-bing', 'enable-wikimedia', 'picture-options'
+            'enable-bing', 'enable-wikimedia', 'enable-spotlight', 'picture-options'
         ];
 
         this._signalIds = [];
@@ -97,7 +98,7 @@ export default class PotdExtension extends Extension {
 
     async _refresh() {
         try {
-            const enabledProviders = ['bing', 'wikimedia'].filter(
+            const enabledProviders = ['bing', 'wikimedia', 'spotlight'].filter(
                 p => this._settings.get_boolean(`enable-${p}`)
             );
 
@@ -124,6 +125,8 @@ export default class PotdExtension extends Extension {
                     let providerObj;
                     if (pName === 'wikimedia') {
                         providerObj = new WikimediaProvider(this._settings, this._session);
+                    } else if (pName === 'spotlight') {
+                        providerObj = new WindowsSpotlightProvider(this._settings, this._session);
                     } else {
                         providerObj = new BingProvider(this._settings, this._session);
                     }

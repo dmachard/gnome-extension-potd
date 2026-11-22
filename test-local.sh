@@ -14,7 +14,7 @@ echo "[+] Setting up isolated test environment in $TMP_DIR ..."
 mkdir -p "$EXT_DIR/schemas" "$TMP_DIR/.config"
 
 # Copy extension files with isolated test UUID so host version is never picked up
-cp extension.js prefs.js bing.js wikimedia.js overlay.js provider.js metadata.json "$EXT_DIR/"
+cp extension.js prefs.js bing.js wikimedia.js spotlight.js overlay.js provider.js metadata.json "$EXT_DIR/"
 cp -r icons "$EXT_DIR/"
 sed -i "s/potd@dmachard.dev/$UUID/" "$EXT_DIR/metadata.json"
 cp schemas/*.gschema.xml "$EXT_DIR/schemas/"

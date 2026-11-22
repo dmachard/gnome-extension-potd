@@ -11,6 +11,11 @@
       <summary>Enable Wikimedia in Auto mode</summary>
       <description>Whether Wikimedia should be included in the auto rotation.</description>
     </key>
+    <key name="enable-spotlight" type="b">
+      <default>false</default>
+      <summary>Enable Windows Spotlight in Auto mode</summary>
+      <description>Whether Windows Spotlight should be included in the auto rotation.</description>
+    </key>
     <key name="picture-options" type="s">
       <choices>
         <choice value="none"/>

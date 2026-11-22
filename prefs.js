@@ -30,6 +30,13 @@ export default class DailyPhotoPreferences extends ExtensionPreferences {
         settings.bind('enable-wikimedia', wikimediaRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         autoGroup.add(wikimediaRow);
 
+        const spotlightRow = new Adw.SwitchRow({
+            title: 'Windows Spotlight',
+            subtitle: 'Include new images from Windows Spotlight',
+        });
+        settings.bind('enable-spotlight', spotlightRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        autoGroup.add(spotlightRow);
+
         // Display Group
         const displayGroup = new Adw.PreferencesGroup({
             title: 'Display',

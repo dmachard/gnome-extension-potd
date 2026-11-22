@@ -15,7 +15,7 @@ mkdir -p "$INSTALL_DIR/schemas"
 
 # Copy files
 echo "Copying files to $INSTALL_DIR ..."
-cp extension.js prefs.js bing.js wikimedia.js overlay.js provider.js metadata.json "$INSTALL_DIR/"
+cp extension.js prefs.js bing.js wikimedia.js spotlight.js overlay.js provider.js metadata.json "$INSTALL_DIR/"
 cp -r icons "$INSTALL_DIR/"
 
 # Copy GSettings schemas
