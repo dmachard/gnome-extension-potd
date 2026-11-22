@@ -5,6 +5,7 @@ import { ImageProvider } from './provider.js';
 
 const SPOTLIGHT_API = 'https://fd.api.iris.microsoft.com/v4/api/selection';
 const SPOTLIGHT_PLACEMENT = '88000820';
+const SPOTLIGHT_BATCH_COUNT = 4;
 const REQUEST_TIMEOUT_SEC = 15;
 
 export class WindowsSpotlightProvider extends ImageProvider {
@@ -25,7 +26,7 @@ export class WindowsSpotlightProvider extends ImageProvider {
             'es': { country: 'ES', locale: 'es-ES' },
         };
         const { country, locale } = locales[lang] || locales['en'];
-        const url = `${SPOTLIGHT_API}?&placement=${SPOTLIGHT_PLACEMENT}&bcnt=1&country=${country}&locale=${locale}&fmt=json`;
+        const url = `${SPOTLIGHT_API}?&placement=${SPOTLIGHT_PLACEMENT}&bcnt=${SPOTLIGHT_BATCH_COUNT}&country=${country}&locale=${locale}&fmt=json`;
 
         const message = Soup.Message.new('GET', url);
         const cancellable = new Gio.Cancellable();
@@ -68,12 +69,41 @@ export class WindowsSpotlightProvider extends ImageProvider {
         });
     }
 
+    _getDownloadDir() {
+        const customDir = this._settings?.get_string('download-folder');
+        return customDir || GLib.build_filenamev([GLib.get_user_cache_dir(), 'potd']);
+    }
+
+    _isCached(imageUrl) {
+        const baseName = GLib.compute_checksum_for_string(GLib.ChecksumType.MD5, imageUrl, -1);
+        const destPath = GLib.build_filenamev([this._getDownloadDir(), `${baseName}.jpg`]);
+        return Gio.File.new_for_path(destPath).query_exists(null);
+    }
+
     _parseResponse(json, lang = 'en') {
-        const rawItem = json?.batchrsp?.items?.[0]?.item;
-        if (!rawItem || typeof rawItem !== 'string') {
-            throw new Error('Malformed Spotlight API response: missing item');
+        const items = json?.batchrsp?.items;
+        if (!Array.isArray(items) || items.length === 0) {
+            throw new Error('Malformed Spotlight API response: missing items');
         }
 
+        const candidates = [];
+        for (const entry of items) {
+            if (!entry?.item || typeof entry.item !== 'string') continue;
+            try {
+                candidates.push(this._parseItem(entry.item, lang));
+            } catch (_e) {
+                // Skip malformed entry if another candidate succeeds
+            }
+        }
+
+        if (candidates.length === 0) {
+            throw new Error('Malformed Spotlight API response: no valid items');
+        }
+
+        return candidates.find(c => !this._isCached(c.imageUrl)) || candidates[0];
+    }
+
+    _parseItem(rawItem, lang = 'en') {
         const item = JSON.parse(rawItem);
         const ad = item?.ad;
         if (!ad || typeof ad !== 'object') {
