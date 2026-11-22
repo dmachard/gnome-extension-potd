@@ -46,19 +46,27 @@ export default class PotdExtension extends Extension {
         });
         Main.panel.addToStatusArea(this.uuid, this._indicator);
 
+        this._lastSuccessKey = null;
         this._refresh().catch(() => { });
 
         const refreshKeys = [
-            'enable-bing', 'enable-wikimedia', 'enable-spotlight', 'picture-options', 'download-folder'
+            'enable-bing', 'enable-wikimedia', 'enable-spotlight', 'download-folder'
         ];
 
         this._signalIds = [];
         for (const key of refreshKeys) {
             const id = this._settings.connect(`changed::${key}`, () => {
+                this._lastSuccessKey = null;
                 this._refresh().catch(() => { });
             });
             this._signalIds.push(id);
         }
+        this._signalIds.push(
+            this._settings.connect('changed::picture-options', () => {
+                const placement = this._settings.get_string('picture-options') || 'zoom';
+                this._bgSettings?.set_string('picture-options', placement);
+            })
+        );
 
         this._scheduleTimer();
     }
@@ -77,10 +85,15 @@ export default class PotdExtension extends Extension {
 
     _updateNextUpdateLabel() {
         if (!this._nextUpdateItem || !this._settings) return;
-        const nextDate = new Date(Date.now() + REFRESH_INTERVAL * 1000);
-        const nextTime = nextDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const providers = this._getEnabledProviders();
-        const nextProvider = providers[this._getProviderIndex(nextDate, providers)];
+        const now = new Date();
+        const sliceLength = 24 / providers.length;
+        const currentIndex = this._getProviderIndex(now, providers);
+        const nextHour = (Math.floor(now.getHours() / sliceLength) + 1) * sliceLength;
+        const nextDate = new Date(now);
+        nextDate.setHours(nextHour, 0, 0, 0);
+        const nextTime = nextDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const nextProvider = providers[(currentIndex + 1) % providers.length];
         this._nextUpdateItem.label.text = `Next update: ${nextTime} (${nextProvider})`;
     }
 
@@ -136,7 +149,14 @@ export default class PotdExtension extends Extension {
         try {
             this._updateNextUpdateLabel();
             const enabledProviders = this._getEnabledProviders();
-            const index = this._getProviderIndex(new Date(), enabledProviders);
+            const now = new Date();
+            const index = this._getProviderIndex(now, enabledProviders);
+            const dateKey = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+            const sliceKey = `${dateKey}-${enabledProviders[index]}`;
+
+            if (this._lastSuccessKey === sliceKey) {
+                return;
+            }
 
             // Place calculated provider first, then others as fallback
             const sequence = [
@@ -183,6 +203,7 @@ export default class PotdExtension extends Extension {
             }
 
             const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            this._lastSuccessKey = sliceKey;
             this._setStatus(`Updated: ${time} (${usedProvider})`, false);
         } catch (e) {
             console.error(`[POTD] Global refresh error: ${e.message}`);
