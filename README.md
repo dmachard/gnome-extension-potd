@@ -1,15 +1,16 @@
 # Picture of the Day (Potd) - GNOME Extension
 
-A GNOME Shell extension that automatically updates your wallpaper with daily images from Bing and Wikimedia Commons, featuring a minimalist credits overlay. 
+A GNOME Shell extension that automatically updates your wallpaper with daily images from Bing, Wikimedia Commons, or Windows Spotlight, featuring a minimalist credits overlay.
 
 <img src="potd-overview.png" alt="Picture of the day"/>
 
 ## Features
 
 - **Automatic Rotation**: Switches between enabled image sources throughout the day.
-  - Images provided by [Bing](https://www.bing.com), [Wikimedia Commons](https://commons.wikimedia.org/), or Windows Spotlight
+  - Images provided by [Bing](https://www.bing.com), [Wikimedia Commons](https://commons.wikimedia.org/), or Windows Spotlight.
+  - Falls back to the remaining enabled sources if a provider is unavailable.
 - **Description Overlay**: Displays a minimalist info box on desktop with the image title, author, and copyright credits.
-- **Top Bar Menu**: Panel indicator for quick access to extension settings.
+- **Credits Metadata**: Saves image metadata alongside downloaded wallpapers.
 
 ## Requirements
 
@@ -42,12 +43,11 @@ Run an isolated nested GNOME Shell session without touching your host configurat
 ./test-local.sh
 ```
 
-## Build for website
+## Build for GNOME Extensions
 
-Developers Guide: https://gjs.guide/extensions/
+Developer guide: https://gjs.guide/extensions/
 
-Update the version in `metadata.json`
-Zip and upload at  https://extensions.gnome.org/upload/
+Update the version in `metadata.json`, then zip and upload the extension at https://extensions.gnome.org/upload/.
 
 ```bash
 zip -r ~/potd@dmachard.dev.shell-extension.zip \
