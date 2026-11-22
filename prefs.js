@@ -48,6 +48,7 @@ export default class DailyPhotoPreferences extends ExtensionPreferences {
         const optionsModel = Gtk.StringList.new([
             'Zoom',
             'Centered',
+            'Wallpaper',
             'Scaled',
             'Stretched',
             'Spanned',
@@ -60,7 +61,7 @@ export default class DailyPhotoPreferences extends ExtensionPreferences {
         });
 
         const currentOption = settings.get_string('picture-options');
-        const optionsValues = ['zoom', 'centered', 'scaled', 'stretched', 'spanned', 'none'];
+        const optionsValues = ['zoom', 'centered', 'wallpaper', 'scaled', 'stretched', 'spanned', 'none'];
         const optionIndex = optionsValues.indexOf(currentOption);
         if (optionIndex !== -1) {
             optionsRow.selected = optionIndex;

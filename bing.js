@@ -36,8 +36,14 @@ export class BingProvider extends ImageProvider {
                 (session, result) => {
                     try {
                         const bytes = session.send_and_read_finish(result);
+                        if (message.status_code !== 200)
+                            throw new Error(`HTTP Error: ${message.status_code}`);
+
                         const text = new TextDecoder().decode(bytes.get_data());
                         const json = JSON.parse(text);
+                        if (!json.images?.[0])
+                            throw new Error('Malformed Bing API response: missing image');
+
                         const image = json.images[0];
 
                         // Parse copyright to extract author and description

@@ -87,6 +87,8 @@ export class Overlay {
         // backgroundGroup = behind windows, in front of wallpaper
         const bgGroup = Main.layoutManager.backgroundGroup
             ?? Main.layoutManager._backgroundGroup;
+        if (!bgGroup)
+            throw new Error('GNOME Shell background group is unavailable');
         bgGroup.add_child(this._container);
 
         // Position just below the top bar (more robust via Main.panel)

@@ -17,11 +17,13 @@ const REFRESH_INTERVAL = 3600;
 // Picture of the Day (Potd) Extension
 export default class PotdExtension extends Extension {
     enable() {
+        this._enabled = true;
         this._overlay = new Overlay();
         this._settings = this.getSettings();
         this._bgSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.background' });
         this._session = new Soup.Session({
             user_agent: 'PictureOfTheDay/1.0',
+            timeout: 30,
         });
 
         this._indicator = new PanelMenu.Button(0.5, this.metadata.name, false);
@@ -115,6 +117,8 @@ export default class PotdExtension extends Extension {
     }
 
     disable() {
+        this._enabled = false;
+
         if (this._timer) {
             GLib.source_remove(this._timer);
             this._timer = null;
@@ -146,6 +150,9 @@ export default class PotdExtension extends Extension {
     }
 
     async _refresh() {
+        if (!this._enabled)
+            return;
+
         try {
             this._updateNextUpdateLabel();
             const enabledProviders = this._getEnabledProviders();
@@ -183,6 +190,8 @@ export default class PotdExtension extends Extension {
                     const width = monitor ? monitor.width : 3840;
 
                     metadata = await providerObj.fetchMetadata(width);
+                    if (!this._enabled)
+                        return;
                     usedProvider = pName;
                     break; // Success, exit fallback loop
                 } catch (e) {
@@ -193,6 +202,8 @@ export default class PotdExtension extends Extension {
             if (!metadata) {
                 throw new Error("All image providers failed.");
             }
+            if (!this._enabled)
+                return;
 
             // Update UI overlay
             this._overlay?.show(metadata);
@@ -246,6 +257,9 @@ export default class PotdExtension extends Extension {
     }
 
     async _updateWallpaper(url, metadata = null, provider = '') {
+        if (!this._enabled)
+            return;
+
         const cacheDir = this._getDownloadDir();
         GLib.mkdir_with_parents(cacheDir, 0o755);
 
@@ -260,6 +274,8 @@ export default class PotdExtension extends Extension {
                 if (info.get_size() < 1000) { // Wallpaper is rarely less than 1KB
                     destFile.delete(null);
                 } else {
+                    if (!this._enabled)
+                        return;
                     this._saveMetadata(cacheDir, baseName, metadata, provider);
                     this._setWallpaper(destPath);
                     return;
@@ -277,6 +293,10 @@ export default class PotdExtension extends Extension {
 
                     if (status !== 200) {
                         throw new Error(`HTTP Error: ${status}`);
+                    }
+                    if (!this._enabled) {
+                        resolve();
+                        return;
                     }
 
                     destFile.replace_contents(bytes.get_data(), null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
