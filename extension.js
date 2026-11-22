@@ -46,7 +46,7 @@ export default class PotdExtension extends Extension {
         this._refresh().catch(() => { });
 
         const refreshKeys = [
-            'enable-bing', 'enable-wikimedia', 'enable-spotlight', 'picture-options'
+            'enable-bing', 'enable-wikimedia', 'enable-spotlight', 'picture-options', 'download-folder'
         ];
 
         this._signalIds = [];
@@ -152,7 +152,7 @@ export default class PotdExtension extends Extension {
 
             // Download and update wallpaper
             if (metadata.imageUrl) {
-                await this._updateWallpaper(metadata.imageUrl);
+                await this._updateWallpaper(metadata.imageUrl, metadata, usedProvider);
             }
 
             const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -172,12 +172,37 @@ export default class PotdExtension extends Extension {
         }
     }
 
-    async _updateWallpaper(url) {
-        const cacheDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'daily-scenery']);
+    _getDownloadDir() {
+        const customDir = this._settings?.get_string('download-folder');
+        return customDir || GLib.build_filenamev([GLib.get_user_cache_dir(), 'daily-scenery']);
+    }
+
+    _saveMetadata(destDir, baseName, metadata, provider) {
+        if (!metadata) return;
+        const metaPath = GLib.build_filenamev([destDir, `${baseName}.json`]);
+        const metaFile = Gio.File.new_for_path(metaPath);
+        if (metaFile.query_exists(null)) return;
+
+        const payload = JSON.stringify({
+            provider: provider || '',
+            savedAt: new Date().toISOString(),
+            ...metadata,
+        }, null, 2);
+        metaFile.replace_contents(
+            new TextEncoder().encode(payload),
+            null,
+            false,
+            Gio.FileCreateFlags.REPLACE_DESTINATION,
+            null
+        );
+    }
+
+    async _updateWallpaper(url, metadata = null, provider = '') {
+        const cacheDir = this._getDownloadDir();
         GLib.mkdir_with_parents(cacheDir, 0o755);
 
-        const filename = GLib.compute_checksum_for_string(GLib.ChecksumType.MD5, url, -1) + '.jpg';
-        const destPath = GLib.build_filenamev([cacheDir, filename]);
+        const baseName = GLib.compute_checksum_for_string(GLib.ChecksumType.MD5, url, -1);
+        const destPath = GLib.build_filenamev([cacheDir, `${baseName}.jpg`]);
         const destFile = Gio.File.new_for_path(destPath);
 
         // If file exists and is very small (likely a previous HTML error), remove it
@@ -187,6 +212,7 @@ export default class PotdExtension extends Extension {
                 if (info.get_size() < 1000) { // Wallpaper is rarely less than 1KB
                     destFile.delete(null);
                 } else {
+                    this._saveMetadata(cacheDir, baseName, metadata, provider);
                     this._setWallpaper(destPath);
                     return;
                 }
@@ -206,6 +232,7 @@ export default class PotdExtension extends Extension {
                     }
 
                     destFile.replace_contents(bytes.get_data(), null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
+                    this._saveMetadata(cacheDir, baseName, metadata, provider);
                     this._setWallpaper(destPath);
                     resolve();
                 } catch (e) {

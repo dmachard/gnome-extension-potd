@@ -1,5 +1,6 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
@@ -70,5 +71,57 @@ export default class DailyPhotoPreferences extends ExtensionPreferences {
         });
 
         displayGroup.add(optionsRow);
+
+        // Downloads Group
+        const downloadsGroup = new Adw.PreferencesGroup({
+            title: 'Downloads',
+        });
+        page.add(downloadsGroup);
+
+        const defaultDir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'daily-scenery']);
+        const getActiveDir = () => settings.get_string('download-folder') || defaultDir;
+
+        const folderRow = new Adw.ActionRow({
+            title: 'Download folder',
+            subtitle: getActiveDir(),
+        });
+
+        const openButton = new Gtk.Button({
+            label: 'Open folder',
+            valign: Gtk.Align.CENTER,
+        });
+        openButton.connect('clicked', () => {
+            const dirPath = getActiveDir();
+            GLib.mkdir_with_parents(dirPath, 0o755);
+            const launcher = Gtk.FileLauncher.new(Gio.File.new_for_path(dirPath));
+            launcher.launch(window, null, null);
+        });
+
+        const changeButton = new Gtk.Button({
+            label: 'Change folder',
+            valign: Gtk.Align.CENTER,
+        });
+        changeButton.connect('clicked', () => {
+            const dialog = new Gtk.FileDialog({
+                title: 'Select Download Folder',
+                initial_folder: Gio.File.new_for_path(getActiveDir()),
+            });
+            dialog.select_folder(window, null, (dlg, result) => {
+                try {
+                    const file = dlg.select_folder_finish(result);
+                    const path = file?.get_path();
+                    if (path) {
+                        settings.set_string('download-folder', path);
+                        folderRow.subtitle = path;
+                    }
+                } catch (_e) {
+                    // User cancelled dialog
+                }
+            });
+        });
+
+        folderRow.add_suffix(openButton);
+        folderRow.add_suffix(changeButton);
+        downloadsGroup.add(folderRow);
     }
 }
